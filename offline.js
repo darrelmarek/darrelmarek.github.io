@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1543808184,
+	"version": 1543847604,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -29,6 +29,7 @@
 		"images/classes-sheet0.png",
 		"images/classes-sheet1.png",
 		"images/classes-sheet2.png",
+		"images/drop_spot-sheet0.png",
 		"icon-16.png",
 		"icon-32.png",
 		"icon-114.png",
