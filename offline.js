@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1543848331,
+	"version": 1543867922,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -7,9 +7,8 @@
 		"offlineClient.js",
 		"images/heads-sheet0.png",
 		"images/heads-sheet1.png",
+		"images/heads-sheet2.png",
 		"images/hairs-sheet0.png",
-		"images/hairs-sheet1.png",
-		"images/hairs-sheet2.png",
 		"images/shirts-sheet0.png",
 		"images/shirts-sheet1.png",
 		"images/shirts-sheet2.png",
@@ -30,6 +29,8 @@
 		"images/classes-sheet1.png",
 		"images/classes-sheet2.png",
 		"images/drop_spot-sheet0.png",
+		"images/l_x_1-sheet0.png",
+		"images/l_x_2-sheet0.png",
 		"icon-16.png",
 		"icon-32.png",
 		"icon-114.png",
