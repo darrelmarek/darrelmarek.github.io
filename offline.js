@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1543786332,
+	"version": 1543807657,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -22,10 +22,13 @@
 		"images/accessories-sheet0.png",
 		"images/accessories-sheet1.png",
 		"images/background-sheet0.png",
-		"images/border-sheet0.png",
-		"images/border-sheet1.png",
-		"images/border-sheet2.png",
+		"images/borders-sheet0.png",
+		"images/borders-sheet1.png",
+		"images/borders-sheet2.png",
 		"images/name_banner-sheet0.png",
+		"images/classes-sheet0.png",
+		"images/classes-sheet1.png",
+		"images/classes-sheet2.png",
 		"icon-16.png",
 		"icon-32.png",
 		"icon-114.png",
