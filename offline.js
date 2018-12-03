@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1543867922,
+	"version": 1543874435,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -31,6 +31,8 @@
 		"images/drop_spot-sheet0.png",
 		"images/l_x_1-sheet0.png",
 		"images/l_x_2-sheet0.png",
+		"images/r_chat_bubble-sheet0.png",
+		"images/l_chat_bubble-sheet0.png",
 		"icon-16.png",
 		"icon-32.png",
 		"icon-114.png",
