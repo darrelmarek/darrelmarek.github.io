@@ -21714,6 +21714,8 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Sprite.prototype.cnds.OnCreated,
 	cr.behaviors.custom.prototype.acts.SetSpeed,
 	cr.behaviors.EightDir.prototype.cnds.IsMoving,
-	cr.plugins_.Sprite.prototype.cnds.OnCollision
+	cr.plugins_.Sprite.prototype.cnds.OnCollision,
+	cr.plugins_.Sprite.prototype.exps.Y,
+	cr.system_object.prototype.cnds.TriggerOnce
 ];};
 
