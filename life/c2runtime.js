@@ -20491,9 +20491,15 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Sprite.prototype.acts.StartAnim,
 	cr.system_object.prototype.acts.SubVar,
 	cr.system_object.prototype.acts.AddVar,
+	cr.system_object.prototype.cnds.Compare,
+	cr.system_object.prototype.exps.round,
+	cr.system_object.prototype.exps.random,
+	cr.plugins_.Audio.prototype.acts.Stop,
+	cr.plugins_.Sprite.prototype.acts.Destroy,
+	cr.system_object.prototype.acts.Wait,
+	cr.plugins_.Sprite.prototype.acts.SetVisible,
 	cr.plugins_.Sprite.prototype.acts.SetAnim,
 	cr.plugins_.Sprite.prototype.cnds.IsVisible,
-	cr.plugins_.Sprite.prototype.acts.SetVisible,
 	cr.system_object.prototype.cnds.Else,
 	cr.plugins_.Sprite.prototype.cnds.OnAnimFinished,
 	cr.plugins_.Sprite.prototype.acts.SetAnimFrame,
@@ -20501,7 +20507,6 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Text.prototype.acts.SetText,
 	cr.system_object.prototype.cnds.CompareVar,
 	cr.plugins_.Audio.prototype.acts.StopAll,
-	cr.system_object.prototype.acts.SetTimescale,
-	cr.plugins_.Sprite.prototype.acts.Destroy
+	cr.system_object.prototype.acts.SetTimescale
 ];};
 

@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1556414312,
+	"version": 1556415824,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -19,6 +19,7 @@
 		"images/screen-sheet0.png",
 		"images/coffee_sprite-sheet0.png",
 		"images/death-sheet0.png",
+		"images/coffee_spilled_sprite-sheet0.png",
 		"media/keyboard1.m4a",
 		"media/keyboard1.ogg",
 		"media/keyboard2.m4a",
@@ -53,6 +54,8 @@
 		"media/coffee1.ogg",
 		"media/coffee2.m4a",
 		"media/coffee2.ogg",
+		"media/coffee_fall1.m4a",
+		"media/coffee_fall1.ogg",
 		"icon-16.png",
 		"icon-32.png",
 		"icon-114.png",
