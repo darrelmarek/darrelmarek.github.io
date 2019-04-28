@@ -18315,6 +18315,239 @@ cr.plugins_.Audio = function(runtime)
 }());
 ;
 ;
+cr.plugins_.Keyboard = function(runtime)
+{
+	this.runtime = runtime;
+};
+(function ()
+{
+	var pluginProto = cr.plugins_.Keyboard.prototype;
+	pluginProto.Type = function(plugin)
+	{
+		this.plugin = plugin;
+		this.runtime = plugin.runtime;
+	};
+	var typeProto = pluginProto.Type.prototype;
+	typeProto.onCreate = function()
+	{
+	};
+	pluginProto.Instance = function(type)
+	{
+		this.type = type;
+		this.runtime = type.runtime;
+		this.keyMap = new Array(256);	// stores key up/down state
+		this.usedKeys = new Array(256);
+		this.triggerKey = 0;
+	};
+	var instanceProto = pluginProto.Instance.prototype;
+	instanceProto.onCreate = function()
+	{
+		var self = this;
+		if (!this.runtime.isDomFree)
+		{
+			jQuery(document).keydown(
+				function(info) {
+					self.onKeyDown(info);
+				}
+			);
+			jQuery(document).keyup(
+				function(info) {
+					self.onKeyUp(info);
+				}
+			);
+		}
+	};
+	var keysToBlockWhenFramed = [32, 33, 34, 35, 36, 37, 38, 39, 40, 44];
+	instanceProto.onKeyDown = function (info)
+	{
+		var alreadyPreventedDefault = false;
+		if (window != window.top && keysToBlockWhenFramed.indexOf(info.which) > -1)
+		{
+			info.preventDefault();
+			alreadyPreventedDefault = true;
+			info.stopPropagation();
+		}
+		if (this.keyMap[info.which])
+		{
+			if (this.usedKeys[info.which] && !alreadyPreventedDefault)
+				info.preventDefault();
+			return;
+		}
+		this.keyMap[info.which] = true;
+		this.triggerKey = info.which;
+		this.runtime.isInUserInputEvent = true;
+		this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnAnyKey, this);
+		var eventRan = this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnKey, this);
+		var eventRan2 = this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnKeyCode, this);
+		this.runtime.isInUserInputEvent = false;
+		if (eventRan || eventRan2)
+		{
+			this.usedKeys[info.which] = true;
+			if (!alreadyPreventedDefault)
+				info.preventDefault();
+		}
+	};
+	instanceProto.onKeyUp = function (info)
+	{
+		this.keyMap[info.which] = false;
+		this.triggerKey = info.which;
+		this.runtime.isInUserInputEvent = true;
+		this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnAnyKeyReleased, this);
+		var eventRan = this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnKeyReleased, this);
+		var eventRan2 = this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnKeyCodeReleased, this);
+		this.runtime.isInUserInputEvent = false;
+		if (eventRan || eventRan2 || this.usedKeys[info.which])
+		{
+			this.usedKeys[info.which] = true;
+			info.preventDefault();
+		}
+	};
+	instanceProto.onWindowBlur = function ()
+	{
+		var i;
+		for (i = 0; i < 256; ++i)
+		{
+			if (!this.keyMap[i])
+				continue;		// key already up
+			this.keyMap[i] = false;
+			this.triggerKey = i;
+			this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnAnyKeyReleased, this);
+			var eventRan = this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnKeyReleased, this);
+			var eventRan2 = this.runtime.trigger(cr.plugins_.Keyboard.prototype.cnds.OnKeyCodeReleased, this);
+			if (eventRan || eventRan2)
+				this.usedKeys[i] = true;
+		}
+	};
+	instanceProto.saveToJSON = function ()
+	{
+		return { "triggerKey": this.triggerKey };
+	};
+	instanceProto.loadFromJSON = function (o)
+	{
+		this.triggerKey = o["triggerKey"];
+	};
+	function Cnds() {};
+	Cnds.prototype.IsKeyDown = function(key)
+	{
+		return this.keyMap[key];
+	};
+	Cnds.prototype.OnKey = function(key)
+	{
+		return (key === this.triggerKey);
+	};
+	Cnds.prototype.OnAnyKey = function(key)
+	{
+		return true;
+	};
+	Cnds.prototype.OnAnyKeyReleased = function(key)
+	{
+		return true;
+	};
+	Cnds.prototype.OnKeyReleased = function(key)
+	{
+		return (key === this.triggerKey);
+	};
+	Cnds.prototype.IsKeyCodeDown = function(key)
+	{
+		key = Math.floor(key);
+		if (key < 0 || key >= this.keyMap.length)
+			return false;
+		return this.keyMap[key];
+	};
+	Cnds.prototype.OnKeyCode = function(key)
+	{
+		return (key === this.triggerKey);
+	};
+	Cnds.prototype.OnKeyCodeReleased = function(key)
+	{
+		return (key === this.triggerKey);
+	};
+	pluginProto.cnds = new Cnds();
+	function Acts() {};
+	pluginProto.acts = new Acts();
+	function Exps() {};
+	Exps.prototype.LastKeyCode = function (ret)
+	{
+		ret.set_int(this.triggerKey);
+	};
+	function fixedStringFromCharCode(kc)
+	{
+		kc = Math.floor(kc);
+		switch (kc) {
+		case 8:		return "backspace";
+		case 9:		return "tab";
+		case 13:	return "enter";
+		case 16:	return "shift";
+		case 17:	return "control";
+		case 18:	return "alt";
+		case 19:	return "pause";
+		case 20:	return "capslock";
+		case 27:	return "esc";
+		case 33:	return "pageup";
+		case 34:	return "pagedown";
+		case 35:	return "end";
+		case 36:	return "home";
+		case 37:	return "←";
+		case 38:	return "↑";
+		case 39:	return "→";
+		case 40:	return "↓";
+		case 45:	return "insert";
+		case 46:	return "del";
+		case 91:	return "left window key";
+		case 92:	return "right window key";
+		case 93:	return "select";
+		case 96:	return "numpad 0";
+		case 97:	return "numpad 1";
+		case 98:	return "numpad 2";
+		case 99:	return "numpad 3";
+		case 100:	return "numpad 4";
+		case 101:	return "numpad 5";
+		case 102:	return "numpad 6";
+		case 103:	return "numpad 7";
+		case 104:	return "numpad 8";
+		case 105:	return "numpad 9";
+		case 106:	return "numpad *";
+		case 107:	return "numpad +";
+		case 109:	return "numpad -";
+		case 110:	return "numpad .";
+		case 111:	return "numpad /";
+		case 112:	return "F1";
+		case 113:	return "F2";
+		case 114:	return "F3";
+		case 115:	return "F4";
+		case 116:	return "F5";
+		case 117:	return "F6";
+		case 118:	return "F7";
+		case 119:	return "F8";
+		case 120:	return "F9";
+		case 121:	return "F10";
+		case 122:	return "F11";
+		case 123:	return "F12";
+		case 144:	return "numlock";
+		case 145:	return "scroll lock";
+		case 186:	return ";";
+		case 187:	return "=";
+		case 188:	return ",";
+		case 189:	return "-";
+		case 190:	return ".";
+		case 191:	return "/";
+		case 192:	return "'";
+		case 219:	return "[";
+		case 220:	return "\\";
+		case 221:	return "]";
+		case 222:	return "#";
+		case 223:	return "`";
+		default:	return String.fromCharCode(kc);
+		}
+	};
+	Exps.prototype.StringFromKeyCode = function (ret, kc)
+	{
+		ret.set_string(fixedStringFromCharCode(kc));
+	};
+	pluginProto.exps = new Exps();
+}());
+;
+;
 cr.plugins_.Mouse = function(runtime)
 {
 	this.runtime = runtime;
@@ -20476,11 +20709,973 @@ cr.plugins_.Text = function(runtime)
 	};
 	pluginProto.exps = new Exps();
 }());
+;
+;
+cr.behaviors.EightDir = function(runtime)
+{
+	this.runtime = runtime;
+};
+(function ()
+{
+	var behaviorProto = cr.behaviors.EightDir.prototype;
+	behaviorProto.Type = function(behavior, objtype)
+	{
+		this.behavior = behavior;
+		this.objtype = objtype;
+		this.runtime = behavior.runtime;
+	};
+	var behtypeProto = behaviorProto.Type.prototype;
+	behtypeProto.onCreate = function()
+	{
+	};
+	behaviorProto.Instance = function(type, inst)
+	{
+		this.type = type;
+		this.behavior = type.behavior;
+		this.inst = inst;				// associated object instance to modify
+		this.runtime = type.runtime;
+		this.upkey = false;
+		this.downkey = false;
+		this.leftkey = false;
+		this.rightkey = false;
+		this.ignoreInput = false;
+		this.simup = false;
+		this.simdown = false;
+		this.simleft = false;
+		this.simright = false;
+		this.lastuptick = -1;
+		this.lastdowntick = -1;
+		this.lastlefttick = -1;
+		this.lastrighttick = -1;
+		this.dx = 0;
+		this.dy = 0;
+	};
+	var behinstProto = behaviorProto.Instance.prototype;
+	behinstProto.onCreate = function()
+	{
+		this.maxspeed = this.properties[0];
+		this.acc = this.properties[1];
+		this.dec = this.properties[2];
+		this.directions = this.properties[3];	// 0=Up & down, 1=Left & right, 2=4 directions, 3=8 directions"
+		this.angleMode = this.properties[4];	// 0=No,1=90-degree intervals, 2=45-degree intervals, 3=360 degree (smooth)
+		this.defaultControls = (this.properties[5] === 1);	// 0=no, 1=yes
+		this.enabled = (this.properties[6] !== 0);
+		if (this.defaultControls && !this.runtime.isDomFree)
+		{
+			jQuery(document).keydown(
+				(function (self) {
+					return function(info) {
+						self.onKeyDown(info);
+					};
+				})(this)
+			);
+			jQuery(document).keyup(
+				(function (self) {
+					return function(info) {
+						self.onKeyUp(info);
+					};
+				})(this)
+			);
+		}
+	};
+	behinstProto.saveToJSON = function ()
+	{
+		return {
+			"dx": this.dx,
+			"dy": this.dy,
+			"enabled": this.enabled,
+			"maxspeed": this.maxspeed,
+			"acc": this.acc,
+			"dec": this.dec,
+			"ignoreInput": this.ignoreInput
+		};
+	};
+	behinstProto.loadFromJSON = function (o)
+	{
+		this.dx = o["dx"];
+		this.dy = o["dy"];
+		this.enabled = o["enabled"];
+		this.maxspeed = o["maxspeed"];
+		this.acc = o["acc"];
+		this.dec = o["dec"];
+		this.ignoreInput = o["ignoreInput"];
+		this.upkey = false;
+		this.downkey = false;
+		this.leftkey = false;
+		this.rightkey = false;
+		this.simup = false;
+		this.simdown = false;
+		this.simleft = false;
+		this.simright = false;
+		this.lastuptick = -1;
+		this.lastdowntick = -1;
+		this.lastlefttick = -1;
+		this.lastrighttick = -1;
+	};
+	behinstProto.onKeyDown = function (info)
+	{
+		var tickcount = this.runtime.tickcount;
+		switch (info.which) {
+		case 37:	// left
+			info.preventDefault();
+			if (this.lastlefttick < tickcount)
+				this.leftkey = true;
+			break;
+		case 38:	// up
+			info.preventDefault();
+			if (this.lastuptick < tickcount)
+				this.upkey = true;
+			break;
+		case 39:	// right
+			info.preventDefault();
+			if (this.lastrighttick < tickcount)
+				this.rightkey = true;
+			break;
+		case 40:	// down
+			info.preventDefault();
+			if (this.lastdowntick < tickcount)
+				this.downkey = true;
+			break;
+		}
+	};
+	behinstProto.onKeyUp = function (info)
+	{
+		var tickcount = this.runtime.tickcount;
+		switch (info.which) {
+		case 37:	// left
+			info.preventDefault();
+			this.leftkey = false;
+			this.lastlefttick = tickcount;
+			break;
+		case 38:	// up
+			info.preventDefault();
+			this.upkey = false;
+			this.lastuptick = tickcount;
+			break;
+		case 39:	// right
+			info.preventDefault();
+			this.rightkey = false;
+			this.lastrighttick = tickcount;
+			break;
+		case 40:	// down
+			info.preventDefault();
+			this.downkey = false;
+			this.lastdowntick = tickcount;
+			break;
+		}
+	};
+	behinstProto.onWindowBlur = function ()
+	{
+		this.upkey = false;
+		this.downkey = false;
+		this.leftkey = false;
+		this.rightkey = false;
+	};
+	behinstProto.tick = function ()
+	{
+		var dt = this.runtime.getDt(this.inst);
+		var left = this.leftkey || this.simleft;
+		var right = this.rightkey || this.simright;
+		var up = this.upkey || this.simup;
+		var down = this.downkey || this.simdown;
+		this.simleft = false;
+		this.simright = false;
+		this.simup = false;
+		this.simdown = false;
+		if (!this.enabled)
+			return;
+		var collobj = this.runtime.testOverlapSolid(this.inst);
+		if (collobj)
+		{
+			this.runtime.registerCollision(this.inst, collobj);
+			if (!this.runtime.pushOutSolidNearest(this.inst))
+				return;		// must be stuck in solid
+		}
+		if (this.ignoreInput)
+		{
+			left = false;
+			right = false;
+			up = false;
+			down = false;
+		}
+		if (this.directions === 0)
+		{
+			left = false;
+			right = false;
+		}
+		else if (this.directions === 1)
+		{
+			up = false;
+			down = false;
+		}
+		if (this.directions === 2 && (up || down))
+		{
+			left = false;
+			right = false;
+		}
+		if (left == right)	// both up or both down
+		{
+			if (this.dx < 0)
+			{
+				this.dx += this.dec * dt;
+				if (this.dx > 0)
+					this.dx = 0;
+			}
+			else if (this.dx > 0)
+			{
+				this.dx -= this.dec * dt;
+				if (this.dx < 0)
+					this.dx = 0;
+			}
+		}
+		if (up == down)
+		{
+			if (this.dy < 0)
+			{
+				this.dy += this.dec * dt;
+				if (this.dy > 0)
+					this.dy = 0;
+			}
+			else if (this.dy > 0)
+			{
+				this.dy -= this.dec * dt;
+				if (this.dy < 0)
+					this.dy = 0;
+			}
+		}
+		if (left && !right)
+		{
+			if (this.dx > 0)
+				this.dx -= (this.acc + this.dec) * dt;
+			else
+				this.dx -= this.acc * dt;
+		}
+		if (right && !left)
+		{
+			if (this.dx < 0)
+				this.dx += (this.acc + this.dec) * dt;
+			else
+				this.dx += this.acc * dt;
+		}
+		if (up && !down)
+		{
+			if (this.dy > 0)
+				this.dy -= (this.acc + this.dec) * dt;
+			else
+				this.dy -= this.acc * dt;
+		}
+		if (down && !up)
+		{
+			if (this.dy < 0)
+				this.dy += (this.acc + this.dec) * dt;
+			else
+				this.dy += this.acc * dt;
+		}
+		var ax, ay;
+		if (this.dx !== 0 || this.dy !== 0)
+		{
+			var speed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+			if (speed > this.maxspeed)
+			{
+				var a = Math.atan2(this.dy, this.dx);
+				this.dx = this.maxspeed * Math.cos(a);
+				this.dy = this.maxspeed * Math.sin(a);
+			}
+			var oldx = this.inst.x;
+			var oldy = this.inst.y;
+			var oldangle = this.inst.angle;
+			this.inst.x += this.dx * dt;
+			this.inst.set_bbox_changed();
+			collobj = this.runtime.testOverlapSolid(this.inst);
+			if (collobj)
+			{
+				if (!this.runtime.pushOutSolid(this.inst, (this.dx < 0 ? 1 : -1), 0, Math.abs(Math.floor(this.dx * dt))))
+				{
+					this.inst.x = oldx;
+				}
+				this.dx = 0;
+				this.inst.set_bbox_changed();
+				this.runtime.registerCollision(this.inst, collobj);
+			}
+			this.inst.y += this.dy * dt;
+			this.inst.set_bbox_changed();
+			collobj = this.runtime.testOverlapSolid(this.inst);
+			if (collobj)
+			{
+				if (!this.runtime.pushOutSolid(this.inst, 0, (this.dy < 0 ? 1 : -1), Math.abs(Math.floor(this.dy * dt))))
+				{
+					this.inst.y = oldy;
+				}
+				this.dy = 0;
+				this.inst.set_bbox_changed();
+				this.runtime.registerCollision(this.inst, collobj);
+			}
+			ax = cr.round6dp(this.dx);
+			ay = cr.round6dp(this.dy);
+			if ((ax !== 0 || ay !== 0) && this.inst.type.plugin.is_rotatable)
+			{
+				if (this.angleMode === 1)	// 90 degree intervals
+					this.inst.angle = cr.to_clamped_radians(Math.round(cr.to_degrees(Math.atan2(ay, ax)) / 90.0) * 90.0);
+				else if (this.angleMode === 2)	// 45 degree intervals
+					this.inst.angle = cr.to_clamped_radians(Math.round(cr.to_degrees(Math.atan2(ay, ax)) / 45.0) * 45.0);
+				else if (this.angleMode === 3)	// 360 degree
+					this.inst.angle = Math.atan2(ay, ax);
+			}
+			this.inst.set_bbox_changed();
+			if (this.inst.angle != oldangle)
+			{
+				collobj = this.runtime.testOverlapSolid(this.inst);
+				if (collobj)
+				{
+					this.inst.angle = oldangle;
+					this.inst.set_bbox_changed();
+					this.runtime.registerCollision(this.inst, collobj);
+				}
+			}
+		}
+	};
+	function Cnds() {};
+	Cnds.prototype.IsMoving = function ()
+	{
+		var speed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+		return speed > 1e-10;
+	};
+	Cnds.prototype.CompareSpeed = function (cmp, s)
+	{
+		var speed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+		return cr.do_cmp(speed, cmp, s);
+	};
+	behaviorProto.cnds = new Cnds();
+	function Acts() {};
+	Acts.prototype.Stop = function ()
+	{
+		this.dx = 0;
+		this.dy = 0;
+	};
+	Acts.prototype.Reverse = function ()
+	{
+		this.dx *= -1;
+		this.dy *= -1;
+	};
+	Acts.prototype.SetIgnoreInput = function (ignoring)
+	{
+		this.ignoreInput = ignoring;
+	};
+	Acts.prototype.SetSpeed = function (speed)
+	{
+		if (speed < 0)
+			speed = 0;
+		if (speed > this.maxspeed)
+			speed = this.maxspeed;
+		var a = Math.atan2(this.dy, this.dx);
+		this.dx = speed * Math.cos(a);
+		this.dy = speed * Math.sin(a);
+	};
+	Acts.prototype.SetMaxSpeed = function (maxspeed)
+	{
+		this.maxspeed = maxspeed;
+		if (this.maxspeed < 0)
+			this.maxspeed = 0;
+	};
+	Acts.prototype.SetAcceleration = function (acc)
+	{
+		this.acc = acc;
+		if (this.acc < 0)
+			this.acc = 0;
+	};
+	Acts.prototype.SetDeceleration = function (dec)
+	{
+		this.dec = dec;
+		if (this.dec < 0)
+			this.dec = 0;
+	};
+	Acts.prototype.SimulateControl = function (ctrl)
+	{
+		switch (ctrl) {
+		case 0:		this.simleft = true;	break;
+		case 1:		this.simright = true;	break;
+		case 2:		this.simup = true;		break;
+		case 3:		this.simdown = true;	break;
+		}
+	};
+	Acts.prototype.SetEnabled = function (en)
+	{
+		this.enabled = (en === 1);
+	};
+	Acts.prototype.SetVectorX = function (x_)
+	{
+		this.dx = x_;
+	};
+	Acts.prototype.SetVectorY = function (y_)
+	{
+		this.dy = y_;
+	};
+	behaviorProto.acts = new Acts();
+	function Exps() {};
+	Exps.prototype.Speed = function (ret)
+	{
+		ret.set_float(Math.sqrt(this.dx * this.dx + this.dy * this.dy));
+	};
+	Exps.prototype.MaxSpeed = function (ret)
+	{
+		ret.set_float(this.maxspeed);
+	};
+	Exps.prototype.Acceleration = function (ret)
+	{
+		ret.set_float(this.acc);
+	};
+	Exps.prototype.Deceleration = function (ret)
+	{
+		ret.set_float(this.dec);
+	};
+	Exps.prototype.MovingAngle = function (ret)
+	{
+		ret.set_float(cr.to_degrees(Math.atan2(this.dy, this.dx)));
+	};
+	Exps.prototype.VectorX = function (ret)
+	{
+		ret.set_float(this.dx);
+	};
+	Exps.prototype.VectorY = function (ret)
+	{
+		ret.set_float(this.dy);
+	};
+	behaviorProto.exps = new Exps();
+}());
+;
+;
+cr.behaviors.bound = function(runtime)
+{
+	this.runtime = runtime;
+};
+(function ()
+{
+	var behaviorProto = cr.behaviors.bound.prototype;
+	behaviorProto.Type = function(behavior, objtype)
+	{
+		this.behavior = behavior;
+		this.objtype = objtype;
+		this.runtime = behavior.runtime;
+	};
+	var behtypeProto = behaviorProto.Type.prototype;
+	behtypeProto.onCreate = function()
+	{
+	};
+	behaviorProto.Instance = function(type, inst)
+	{
+		this.type = type;
+		this.behavior = type.behavior;
+		this.inst = inst;				// associated object instance to modify
+		this.runtime = type.runtime;
+		this.mode = 0;
+	};
+	var behinstProto = behaviorProto.Instance.prototype;
+	behinstProto.onCreate = function()
+	{
+		this.mode = this.properties[0];	// 0 = origin, 1 = edge
+	};
+	behinstProto.tick = function ()
+	{
+	};
+	behinstProto.tick2 = function ()
+	{
+		this.inst.update_bbox();
+		var bbox = this.inst.bbox;
+		var layout = this.inst.layer.layout;
+		var changed = false;
+		if (this.mode === 0)	// origin
+		{
+			if (this.inst.x < 0)
+			{
+				this.inst.x = 0;
+				changed = true;
+			}
+			if (this.inst.y < 0)
+			{
+				this.inst.y = 0;
+				changed = true;
+			}
+			if (this.inst.x > layout.width)
+			{
+				this.inst.x = layout.width;
+				changed = true;
+			}
+			if (this.inst.y > layout.height)
+			{
+				this.inst.y = layout.height;
+				changed = true;
+			}
+		}
+		else
+		{
+			if (bbox.left < 0)
+			{
+				this.inst.x -= bbox.left;
+				changed = true;
+			}
+			if (bbox.top < 0)
+			{
+				this.inst.y -= bbox.top;
+				changed = true;
+			}
+			if (bbox.right > layout.width)
+			{
+				this.inst.x -= (bbox.right - layout.width);
+				changed = true;
+			}
+			if (bbox.bottom > layout.height)
+			{
+				this.inst.y -= (bbox.bottom - layout.height);
+				changed = true;
+			}
+		}
+		if (changed)
+			this.inst.set_bbox_changed();
+	};
+}());
+;
+;
+cr.behaviors.custom = function(runtime)
+{
+	this.runtime = runtime;
+};
+(function ()
+{
+	var behaviorProto = cr.behaviors.custom.prototype;
+	behaviorProto.Type = function(behavior, objtype)
+	{
+		this.behavior = behavior;
+		this.objtype = objtype;
+		this.runtime = behavior.runtime;
+	};
+	var behtypeProto = behaviorProto.Type.prototype;
+	behtypeProto.onCreate = function()
+	{
+	};
+	behaviorProto.Instance = function(type, inst)
+	{
+		this.type = type;
+		this.behavior = type.behavior;
+		this.inst = inst;
+		this.runtime = type.runtime;
+		this.dx = 0;
+		this.dy = 0;
+		this.cancelStep = 0;
+	};
+	var behinstProto = behaviorProto.Instance.prototype;
+	behinstProto.onCreate = function()
+	{
+		this.stepMode = this.properties[0];	// 0=None, 1=Linear, 2=Horizontal then vertical, 3=Vertical then horizontal
+		this.pxPerStep = this.properties[1];
+		this.enabled = (this.properties[2] !== 0);
+	};
+	behinstProto.saveToJSON = function ()
+	{
+		return {
+			"dx": this.dx,
+			"dy": this.dy,
+			"cancelStep": this.cancelStep,
+			"enabled": this.enabled,
+			"stepMode": this.stepMode,
+			"pxPerStep": this.pxPerStep
+		};
+	};
+	behinstProto.loadFromJSON = function (o)
+	{
+		this.dx = o["dx"];
+		this.dy = o["dy"];
+		this.cancelStep = o["cancelStep"];
+		this.enabled = o["enabled"];
+		this.stepMode = o["stepMode"];
+		this.pxPerStep = o["pxPerStep"];
+	};
+	behinstProto.getSpeed = function ()
+	{
+		return Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+	};
+	behinstProto.getAngle = function ()
+	{
+		return Math.atan2(this.dy, this.dx);
+	};
+	function sign(x)
+	{
+		if (x === 0)
+			return 0;
+		else if (x < 0)
+			return -1;
+		else
+			return 1;
+	};
+	behinstProto.step = function (x, y, trigmethod)
+	{
+		if (x === 0 && y === 0)
+			return;
+		var startx = this.inst.x;
+		var starty = this.inst.y;
+		var sx, sy, prog;
+		var steps = Math.round(Math.sqrt(x * x + y * y) / this.pxPerStep);
+		if (steps === 0)
+			steps = 1;
+		var i;
+		for (i = 1; i <= steps; i++)
+		{
+			prog = i / steps;
+			this.inst.x = startx + x * prog;
+			this.inst.y = starty + y * prog;
+			this.inst.set_bbox_changed();
+			this.runtime.trigger(trigmethod, this.inst);
+			if (this.cancelStep === 1)
+			{
+				i--;
+				prog = i / steps;
+				this.inst.x = startx + x * prog;
+				this.inst.y = starty + y * prog;
+				this.inst.set_bbox_changed();
+				return;
+			}
+			else if (this.cancelStep === 2)
+			{
+				return;
+			}
+		}
+	};
+	behinstProto.tick = function ()
+	{
+		var dt = this.runtime.getDt(this.inst);
+		var mx = this.dx * dt;
+		var my = this.dy * dt;
+		var i, steps;
+		if ((this.dx === 0 && this.dy === 0) || !this.enabled)
+			return;
+		this.cancelStep = 0;
+		if (this.stepMode === 0)		// none
+		{
+			this.inst.x += mx;
+			this.inst.y += my;
+		}
+		else if (this.stepMode === 1)	// linear
+		{
+			this.step(mx, my, cr.behaviors.custom.prototype.cnds.OnCMStep);
+		}
+		else if (this.stepMode === 2)	// horizontal then vertical
+		{
+			this.step(mx, 0, cr.behaviors.custom.prototype.cnds.OnCMHorizStep);
+			this.cancelStep = 0;
+			this.step(0, my, cr.behaviors.custom.prototype.cnds.OnCMVertStep);
+		}
+		else if (this.stepMode === 3)	// vertical then horizontal
+		{
+			this.step(0, my, cr.behaviors.custom.prototype.cnds.OnCMVertStep);
+			this.cancelStep = 0;
+			this.step(mx, 0, cr.behaviors.custom.prototype.cnds.OnCMHorizStep);
+		}
+		this.inst.set_bbox_changed();
+	};
+	function Cnds() {};
+	Cnds.prototype.IsMoving = function ()
+	{
+		return this.dx != 0 || this.dy != 0;
+	};
+	Cnds.prototype.CompareSpeed = function (axis, cmp, s)
+	{
+		var speed;
+		switch (axis) {
+		case 0:		speed = this.getSpeed();	break;
+		case 1:		speed = this.dx;			break;
+		case 2:		speed = this.dy;			break;
+		}
+		return cr.do_cmp(speed, cmp, s);
+	};
+	Cnds.prototype.OnCMStep = function ()
+	{
+		return true;
+	};
+	Cnds.prototype.OnCMHorizStep = function ()
+	{
+		return true;
+	};
+	Cnds.prototype.OnCMVertStep = function ()
+	{
+		return true;
+	};
+	behaviorProto.cnds = new Cnds();
+	function Acts() {};
+	Acts.prototype.Stop = function ()
+	{
+		this.dx = 0;
+		this.dy = 0;
+	};
+	Acts.prototype.Reverse = function (axis)
+	{
+		switch (axis) {
+		case 0:
+			this.dx *= -1;
+			this.dy *= -1;
+			break;
+		case 1:
+			this.dx *= -1;
+			break;
+		case 2:
+			this.dy *= -1;
+			break;
+		}
+	};
+	Acts.prototype.SetSpeed = function (axis, s)
+	{
+		var a;
+		switch (axis) {
+		case 0:
+			a = this.getAngle();
+			this.dx = Math.cos(a) * s;
+			this.dy = Math.sin(a) * s;
+			break;
+		case 1:
+			this.dx = s;
+			break;
+		case 2:
+			this.dy = s;
+			break;
+		}
+	};
+	Acts.prototype.Accelerate = function (axis, acc)
+	{
+		var dt = this.runtime.getDt(this.inst);
+		var ds = acc * dt;
+		var a;
+		switch (axis) {
+		case 0:
+			a = this.getAngle();
+			this.dx += Math.cos(a) * ds;
+			this.dy += Math.sin(a) * ds;
+			break;
+		case 1:
+			this.dx += ds;
+			break;
+		case 2:
+			this.dy += ds;
+			break;
+		}
+	};
+	Acts.prototype.AccelerateAngle = function (acc, a_)
+	{
+		var dt = this.runtime.getDt(this.inst);
+		var ds = acc * dt;
+		var a = cr.to_radians(a_);
+		this.dx += Math.cos(a) * ds;
+		this.dy += Math.sin(a) * ds;
+	};
+	Acts.prototype.AcceleratePos = function (acc, x, y)
+	{
+		var dt = this.runtime.getDt(this.inst);
+		var ds = acc * dt;
+		var a = Math.atan2(y - this.inst.y, x - this.inst.x);
+		this.dx += Math.cos(a) * ds;
+		this.dy += Math.sin(a) * ds;
+	};
+	Acts.prototype.SetAngleOfMotion = function (a_)
+	{
+		var a = cr.to_radians(a_);
+		var s = this.getSpeed();
+		this.dx = Math.cos(a) * s;
+		this.dy = Math.sin(a) * s;
+	};
+	Acts.prototype.RotateAngleOfMotionClockwise = function (a_)
+	{
+		var a = this.getAngle() + cr.to_radians(a_);
+		var s = this.getSpeed();
+		this.dx = Math.cos(a) * s;
+		this.dy = Math.sin(a) * s;
+	};
+	Acts.prototype.RotateAngleOfMotionCounterClockwise = function (a_)
+	{
+		var a = this.getAngle() - cr.to_radians(a_);
+		var s = this.getSpeed();
+		this.dx = Math.cos(a) * s;
+		this.dy = Math.sin(a) * s;
+	};
+	Acts.prototype.StopStepping = function (mode)
+	{
+		this.cancelStep = mode + 1;
+	};
+	Acts.prototype.PushOutSolid = function (mode)
+	{
+		var a, ux, uy;
+		switch (mode) {
+		case 0:
+			a = this.getAngle();
+			ux = Math.cos(a);
+			uy = Math.sin(a);
+			this.runtime.pushOutSolid(this.inst, -ux, -uy, Math.max(this.getSpeed() * 3, 100));
+			break;
+		case 1:
+			this.runtime.pushOutSolidNearest(this.inst);
+			break;
+		case 2:
+			this.runtime.pushOutSolid(this.inst, 0, -1, Math.max(Math.abs(this.dy) * 3, 100));
+			break;
+		case 3:
+			this.runtime.pushOutSolid(this.inst, 0, 1, Math.max(Math.abs(this.dy) * 3, 100));
+			break;
+		case 4:
+			this.runtime.pushOutSolid(this.inst, -1, 0, Math.max(Math.abs(this.dx) * 3, 100));
+			break;
+		case 5:
+			this.runtime.pushOutSolid(this.inst, 1, 0, Math.max(Math.abs(this.dx) * 3, 100));
+			break;
+		}
+	};
+	Acts.prototype.PushOutSolidAngle = function (a)
+	{
+		a = cr.to_radians(a);
+		var ux = Math.cos(a);
+		var uy = Math.sin(a);
+		this.runtime.pushOutSolid(this.inst, ux, uy, Math.max(this.getSpeed() * 3, 100));
+	};
+	Acts.prototype.SetEnabled = function (en)
+	{
+		this.enabled = (en === 1);
+	};
+	behaviorProto.acts = new Acts();
+	function Exps() {};
+	Exps.prototype.Speed = function (ret)
+	{
+		ret.set_float(this.getSpeed());
+	};
+	Exps.prototype.MovingAngle = function (ret)
+	{
+		ret.set_float(cr.to_degrees(this.getAngle()));
+	};
+	Exps.prototype.dx = function (ret)
+	{
+		ret.set_float(this.dx);
+	};
+	Exps.prototype.dy = function (ret)
+	{
+		ret.set_float(this.dy);
+	};
+	behaviorProto.exps = new Exps();
+}());
+;
+;
+cr.behaviors.scrollto = function(runtime)
+{
+	this.runtime = runtime;
+	this.shakeMag = 0;
+	this.shakeStart = 0;
+	this.shakeEnd = 0;
+	this.shakeMode = 0;
+};
+(function ()
+{
+	var behaviorProto = cr.behaviors.scrollto.prototype;
+	behaviorProto.Type = function(behavior, objtype)
+	{
+		this.behavior = behavior;
+		this.objtype = objtype;
+		this.runtime = behavior.runtime;
+	};
+	var behtypeProto = behaviorProto.Type.prototype;
+	behtypeProto.onCreate = function()
+	{
+	};
+	behaviorProto.Instance = function(type, inst)
+	{
+		this.type = type;
+		this.behavior = type.behavior;
+		this.inst = inst;				// associated object instance to modify
+		this.runtime = type.runtime;
+	};
+	var behinstProto = behaviorProto.Instance.prototype;
+	behinstProto.onCreate = function()
+	{
+		this.enabled = (this.properties[0] !== 0);
+	};
+	behinstProto.saveToJSON = function ()
+	{
+		return {
+			"smg": this.behavior.shakeMag,
+			"ss": this.behavior.shakeStart,
+			"se": this.behavior.shakeEnd,
+			"smd": this.behavior.shakeMode
+		};
+	};
+	behinstProto.loadFromJSON = function (o)
+	{
+		this.behavior.shakeMag = o["smg"];
+		this.behavior.shakeStart = o["ss"];
+		this.behavior.shakeEnd = o["se"];
+		this.behavior.shakeMode = o["smd"];
+	};
+	behinstProto.tick = function ()
+	{
+	};
+	function getScrollToBehavior(inst)
+	{
+		var i, len, binst;
+		for (i = 0, len = inst.behavior_insts.length; i < len; ++i)
+		{
+			binst = inst.behavior_insts[i];
+			if (binst.behavior instanceof cr.behaviors.scrollto)
+				return binst;
+		}
+		return null;
+	};
+	behinstProto.tick2 = function ()
+	{
+		if (!this.enabled)
+			return;
+		var all = this.behavior.my_instances.valuesRef();
+		var sumx = 0, sumy = 0;
+		var i, len, binst, count = 0;
+		for (i = 0, len = all.length; i < len; i++)
+		{
+			binst = getScrollToBehavior(all[i]);
+			if (!binst || !binst.enabled)
+				continue;
+			sumx += all[i].x;
+			sumy += all[i].y;
+			++count;
+		}
+		var layout = this.inst.layer.layout;
+		var now = this.runtime.kahanTime.sum;
+		var offx = 0, offy = 0;
+		if (now >= this.behavior.shakeStart && now < this.behavior.shakeEnd)
+		{
+			var mag = this.behavior.shakeMag * Math.min(this.runtime.timescale, 1);
+			if (this.behavior.shakeMode === 0)
+				mag *= 1 - (now - this.behavior.shakeStart) / (this.behavior.shakeEnd - this.behavior.shakeStart);
+			var a = Math.random() * Math.PI * 2;
+			var d = Math.random() * mag;
+			offx = Math.cos(a) * d;
+			offy = Math.sin(a) * d;
+		}
+		layout.scrollToX(sumx / count + offx);
+		layout.scrollToY(sumy / count + offy);
+	};
+	function Acts() {};
+	Acts.prototype.Shake = function (mag, dur, mode)
+	{
+		this.behavior.shakeMag = mag;
+		this.behavior.shakeStart = this.runtime.kahanTime.sum;
+		this.behavior.shakeEnd = this.behavior.shakeStart + dur;
+		this.behavior.shakeMode = mode;
+	};
+	Acts.prototype.SetEnabled = function (e)
+	{
+		this.enabled = (e !== 0);
+	};
+	behaviorProto.acts = new Acts();
+}());
 cr.getObjectRefTable = function () { return [
 	cr.plugins_.Audio,
+	cr.plugins_.Keyboard,
 	cr.plugins_.Mouse,
 	cr.plugins_.Sprite,
 	cr.plugins_.Text,
+	cr.behaviors.scrollto,
+	cr.behaviors.EightDir,
+	cr.behaviors.bound,
+	cr.behaviors.custom,
 	cr.system_object.prototype.cnds.OnLayoutStart,
 	cr.system_object.prototype.acts.SetLayerScale,
 	cr.plugins_.Sprite.prototype.acts.StopAnim,
@@ -20510,6 +21705,15 @@ cr.getObjectRefTable = function () { return [
 	cr.system_object.prototype.cnds.CompareVar,
 	cr.plugins_.Audio.prototype.acts.StopAll,
 	cr.system_object.prototype.acts.SetTimescale,
-	cr.system_object.prototype.cnds.Every
+	cr.system_object.prototype.cnds.Every,
+	cr.system_object.prototype.acts.NextPrevLayout,
+	cr.system_object.prototype.cnds.CompareTime,
+	cr.system_object.prototype.acts.SetVar,
+	cr.system_object.prototype.acts.CreateObject,
+	cr.plugins_.Sprite.prototype.acts.SetMirrored,
+	cr.plugins_.Sprite.prototype.cnds.OnCreated,
+	cr.behaviors.custom.prototype.acts.SetSpeed,
+	cr.behaviors.EightDir.prototype.cnds.IsMoving,
+	cr.plugins_.Sprite.prototype.cnds.OnCollision
 ];};
 
