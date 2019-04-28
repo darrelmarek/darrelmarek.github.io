@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1556411644,
+	"version": 1556414312,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -17,6 +17,8 @@
 		"images/phone_sprite-sheet0.png",
 		"images/power-sheet0.png",
 		"images/screen-sheet0.png",
+		"images/coffee_sprite-sheet0.png",
+		"images/death-sheet0.png",
 		"media/keyboard1.m4a",
 		"media/keyboard1.ogg",
 		"media/keyboard2.m4a",
@@ -47,6 +49,10 @@
 		"media/penpaper1.ogg",
 		"media/power.m4a",
 		"media/power.ogg",
+		"media/coffee1.m4a",
+		"media/coffee1.ogg",
+		"media/coffee2.m4a",
+		"media/coffee2.ogg",
 		"icon-16.png",
 		"icon-32.png",
 		"icon-114.png",

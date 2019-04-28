@@ -20498,6 +20498,10 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Sprite.prototype.cnds.OnAnimFinished,
 	cr.plugins_.Sprite.prototype.acts.SetAnimFrame,
 	cr.system_object.prototype.cnds.EveryTick,
-	cr.plugins_.Text.prototype.acts.SetText
+	cr.plugins_.Text.prototype.acts.SetText,
+	cr.system_object.prototype.cnds.CompareVar,
+	cr.plugins_.Audio.prototype.acts.StopAll,
+	cr.system_object.prototype.acts.SetTimescale,
+	cr.plugins_.Sprite.prototype.acts.Destroy
 ];};
 
