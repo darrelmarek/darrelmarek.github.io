@@ -2,7 +2,7 @@
 	"name": "Amongus2",
 	"short_name": "Amongus2",
 	"start_url": "index.html",
-	"display": "fullscreen",
+	"display": "standalone",
 	"orientation": "any",
 	"icons": [{
 		"src": "icon-16.png",
