@@ -1,6 +1,6 @@
 ﻿{
-	"name": "Multiplayer game example",
-	"short_name": "Multiplayer game example",
+	"name": "Test",
+	"short_name": "Test",
 	"start_url": "index.html",
 	"display": "standalone",
 	"orientation": "any",
