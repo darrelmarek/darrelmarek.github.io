@@ -1,0 +1,30 @@
+﻿{
+	"version": 1645069914,
+	"fileList": [
+		"data.js",
+		"c2runtime.js",
+		"jquery-3.4.1.min.js",
+		"offlineClient.js",
+		"images/background.png",
+		"images/grass-sheet0.png",
+		"images/grass-sheet1.png",
+		"images/grass2-sheet0.png",
+		"images/grass2-sheet1.png",
+		"images/rock-sheet0.png",
+		"images/rock2-sheet0.png",
+		"images/branch-sheet0.png",
+		"images/tilemap.png",
+		"images/player-sheet0.png",
+		"images/player-sheet1.png",
+		"images/bat-sheet0.png",
+		"images/bat-sheet1.png",
+		"images/projectile-sheet0.png",
+		"images/slash-sheet0.png",
+		"images/slime-sheet0.png",
+		"images/slime-sheet1.png",
+		"images/goblin-sheet0.png",
+		"images/goblin-sheet1.png",
+		"images/skeleton-sheet0.png",
+		"images/coin-sheet0.png"
+	]
+}
