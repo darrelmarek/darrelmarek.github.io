@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1660673836,
+	"version": 1660709157,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -25,6 +25,7 @@
 		"images/goblin-sheet0.png",
 		"images/goblin-sheet1.png",
 		"images/skeleton-sheet0.png",
-		"images/coin-sheet0.png"
+		"images/coin-sheet0.png",
+		"images/touchpad-sheet0.png"
 	]
 }
